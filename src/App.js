@@ -1,66 +1,35 @@
-import "./App.css";
-import { app, database } from "./firebase.config";
-import { collection, addDoc, getDocs } from "firebase/firestore";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
 import { useState } from "react";
+import "./App.css";
+import { storage } from "./firebase.config";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 function App() {
-  const collecctionref = collection(database, "Users");
   const [data, setdata] = useState({});
-  const submithandle = async () => {
-    const Auth = getAuth();
-    // const gProvider = new GoogleAuthProvider();
-    // createUserWithEmailAndPassword(Auth, data.email, data.password)
-    //   .then((res) => {
-    //     console.log(res);
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    // });
-
-    try {
-      const res = await getDocs(collecctionref);
-      console.log(res.docs);
-      console.log(res.docs.map((i) => i.data()));
-
-      // INSERTION
-      // const response = await addDoc(collecctionref, { data });
-      // console.log(response);
-
-      // AUTHS
-      // const res = await signInWithPopup(Auth, gProvider);
-      // console.log(res);
-      // const response = await createUserWithEmailAndPassword(
-      //   Auth,
-      //   data.email,
-      //   data.password
-      // );
-      // console.log(response);
-    } catch (error) {
-      console.log(error);
-    }
+  const handleInput = () => {
+    console.log(data.name);
+    const storageRef = ref(storage, data.name);
+    const uploadTask = uploadBytesResumable(storageRef, data);
+    uploadTask.on(
+      "state_changed",
+      (snap) => {
+        const progress = (snap.bytesTransferred / snap.totalBytes) * 100;
+        console.log(progress);
+      },
+      (err) => {
+        console.log(err);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((url) => {
+          console.log(url);
+        });
+      }
+    );
   };
+
   return (
     <div className="App">
-      <h1>Firebase Tutorial Real time</h1>
-      <label htmlFor="email">Email</label>
-      <input
-        type="text"
-        name="email"
-        onChange={(event) => setdata({ ...data, email: event.target.value })}
-      />
-      <label htmlFor="password">Password</label>
-      <input
-        type="password"
-        name="password"
-        onChange={(event) => setdata({ ...data, password: event.target.value })}
-      />
-      <button onClick={submithandle}>Sign in</button>
+      <input type="file" onChange={(event) => setdata(event.target.files[0])} />
+      <button onClick={handleInput}>UPLOAD</button>
     </div>
   );
 }
